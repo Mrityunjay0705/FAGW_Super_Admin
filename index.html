@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Schools Table</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h2>📋 Schools Table</h2>
+  <table id="students-table">
+    <thead id="table-head"></thead>
+    <tbody id="table-body"></tbody>
+  </table>
+
+  <script>
+    const SUPABASE_URL = "https://jjkmaohgdmbaakvkytlx.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impqa21hb2hnZG1iYWFrdmt5dGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2OTc4OTEsImV4cCI6MjA2NjI3Mzg5MX0.LWOM4AcW4vSOIXePLtpUdFLqTQnXOOb2NW5F1LQLJQs";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function fetchData() {
+      const { data, error } = await client.from('schools').select('*');
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (data.length > 0) {
+        const columns = Object.keys(data[0]);
+        document.getElementById('table-head').innerHTML =
+          `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
+        document.getElementById('table-body').innerHTML =
+          data.map(row => `<tr>${columns.map(col => `<td>${row[col]}</td>`).join('')}</tr>`).join('');
+      } else {
+        document.getElementById('table-body').innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
+      }
+    }
+
+    fetchData();
+  </script>
+</body>
+</html>
