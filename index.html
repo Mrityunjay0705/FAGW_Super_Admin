@@ -2,18 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Schools Table</title>
+  <title>Schools Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #f5f5f5; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      background-color: #121212;
+      color: #f1f1f1;
+    }
+
+    h2 {
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .filter {
+      margin-bottom: 15px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    select {
+      padding: 6px;
+      font-size: 1em;
+      background-color: #1f1f1f;
+      color: #f1f1f1;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+    }
+
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #1e1e1e;
+      color: #f1f1f1;
+    }
+
+    tr:nth-child(even) {
+      background-color: #1a1a1a;
+    }
+
+    tr:hover {
+      background-color: #2a2a2a;
+    }
+
+    @media (max-width: 600px) {
+      table { font-size: 0.9em; }
+    }
   </style>
 </head>
 <body>
-  <h2>📋 Schools Data:</h2>
-  <table id="students-table">
+
+  <h2>📋 Schools Dashboard</h2>
+
+  <div class="filter">
+    <p id="row-count">Total records: 0</p>
+    <label for="districtFilter">Filter by District: </label>
+    <select id="districtFilter">
+      <option value="">All Districts</option>
+    </select>
+  </div>
+
+  <table>
     <thead id="table-head"></thead>
     <tbody id="table-body"></tbody>
   </table>
@@ -23,25 +89,56 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impqa21hb2hnZG1iYWFrdmt5dGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2OTc4OTEsImV4cCI6MjA2NjI3Mzg5MX0.LWOM4AcW4vSOIXePLtpUdFLqTQnXOOb2NW5F1LQLJQs";
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function fetchData() {
-      const { data, error } = await client.from('schools').select('*');
-      if (error) {
-        console.error(error);
-        return;
-      }
+    const columns = ['schoolname', 'principalname', 'mobile', 'district', 'block', 'regstudents', 'totalphotoupload'];
+    
+    
+    async function fetchDistricts() {
+      const { data, error } = await client.from('schools').select('district').neq('district', null);
+      if (error) return console.error('Error fetching districts:', error);
 
-      if (data.length > 0) {
-        const columns = Object.keys(data[0]);
-        document.getElementById('table-head').innerHTML =
-          `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
-        document.getElementById('table-body').innerHTML =
-          data.map(row => `<tr>${columns.map(col => `<td>${row[col]}</td>`).join('')}</tr>`).join('');
-      } else {
-        document.getElementById('table-body').innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
-      }
+      const uniqueDistricts = [...new Set(data.map(item => item.district))].sort();
+      const districtFilter = document.getElementById('districtFilter');
+      uniqueDistricts.forEach(d => {
+        const option = document.createElement('option');
+        option.value = d;
+        option.textContent = d;
+        districtFilter.appendChild(option);
+      });
     }
 
+    async function fetchData(district = '') {
+  let query = client.from('schools').select(columns.join(','));
+  if (district) query = query.eq('district', district);
+
+  const { data, error } = await query;
+  if (error) return console.error('Error fetching data:', error);
+
+  const thead = document.getElementById('table-head');
+  const tbody = document.getElementById('table-body');
+  const rowCount = document.getElementById('row-count'); // <-- add this
+
+  if (data.length > 0) {
+    thead.innerHTML = `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
+    tbody.innerHTML = data.map(row =>
+      `<tr>${columns.map(col => `<td>${row[col] ?? ''}</td>`).join('')}</tr>`
+    ).join('');
+    rowCount.textContent = `Total records: ${data.length}`; // <-- update count
+  } else {
+    thead.innerHTML = '';
+    tbody.innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
+    rowCount.textContent = 'Total records: 0'; // <-- zero fallback
+  }
+}
+
+
+    document.getElementById('districtFilter').addEventListener('change', e => {
+      fetchData(e.target.value);
+    });
+
+    // Initial load
+    fetchDistricts();
     fetchData();
   </script>
+
 </body>
 </html>
