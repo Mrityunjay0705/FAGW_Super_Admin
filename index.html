@@ -16,7 +16,7 @@
 
     h2 {
       text-align: center;
-      color: #ffffff;
+      color: #00ff95;
     }
 
     .filter {
@@ -41,6 +41,7 @@
       width: 100%;
       overflow-x: auto;
       display: block;
+      border-radius: 12px;
     }
 
     th, td {
@@ -69,7 +70,7 @@
 </head>
 <body>
 
-  <h2>📋 Schools Dashboard</h2>
+  <h2>🏫Schools Dashboard</h2>
 
   <div class="filter">
     <p id="row-count">Total records: 0</p>
@@ -78,6 +79,13 @@
       <option value="">All Districts</option>
     </select>
   </div>
+  <div class="filter" id="block-filter-container" style="display: none;">
+  <label for="blockFilter">Filter by Block: </label>
+  <select id="blockFilter">
+    <option value="">All Blocks</option>
+  </select>
+</div>
+
 
   <table>
     <thead id="table-head"></thead>
@@ -85,60 +93,91 @@
   </table>
 
   <script>
-    const SUPABASE_URL = "https://jjkmaohgdmbaakvkytlx.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impqa21hb2hnZG1iYWFrdmt5dGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2OTc4OTEsImV4cCI6MjA2NjI3Mzg5MX0.LWOM4AcW4vSOIXePLtpUdFLqTQnXOOb2NW5F1LQLJQs";
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_URL = "https://jjkmaohgdmbaakvkytlx.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impqa21hb2hnZG1iYWFrdmt5dGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2OTc4OTEsImV4cCI6MjA2NjI3Mzg5MX0.LWOM4AcW4vSOIXePLtpUdFLqTQnXOOb2NW5F1LQLJQs";
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const columns = ['schoolname', 'principalname', 'mobile', 'district', 'block', 'regstudents', 'totalphotoupload'];
-    
-    
-    async function fetchDistricts() {
-      const { data, error } = await client.from('schools').select('district').neq('district', null);
-      if (error) return console.error('Error fetching districts:', error);
+  const columns = ['schoolname', 'principalname', 'mobile', 'district', 'block', 'regstudents', 'totalphotoupload'];
 
-      const uniqueDistricts = [...new Set(data.map(item => item.district))].sort();
-      const districtFilter = document.getElementById('districtFilter');
-      uniqueDistricts.forEach(d => {
-        const option = document.createElement('option');
-        option.value = d;
-        option.textContent = d;
-        districtFilter.appendChild(option);
-      });
+  async function fetchDistricts() {
+    const { data, error } = await client.from('schools').select('district').neq('district', null);
+    if (error) return console.error('Error fetching districts:', error);
+
+    const uniqueDistricts = [...new Set(data.map(item => item.district))].sort();
+    const districtFilter = document.getElementById('districtFilter');
+    uniqueDistricts.forEach(d => {
+      const option = document.createElement('option');
+      option.value = d;
+      option.textContent = d;
+      districtFilter.appendChild(option);
+    });
+  }
+
+  async function fetchBlocks(district) {
+    const { data, error } = await client.from('schools').select('block').eq('district', district).neq('block', null);
+    if (error) return console.error('Error fetching blocks:', error);
+
+    const blockFilter = document.getElementById('blockFilter');
+    blockFilter.innerHTML = `<option value="">All Blocks</option>`;
+    const uniqueBlocks = [...new Set(data.map(item => item.block))].sort();
+    uniqueBlocks.forEach(b => {
+      const option = document.createElement('option');
+      option.value = b;
+      option.textContent = b;
+      blockFilter.appendChild(option);
+    });
+  }
+
+  async function fetchData(district = '', block = '') {
+    let query = client.from('schools').select(columns.join(','));
+    if (district) query = query.eq('district', district);
+    if (block) query = query.eq('block', block);
+
+    const { data, error } = await query;
+    if (error) return console.error('Error fetching data:', error);
+
+    const thead = document.getElementById('table-head');
+    const tbody = document.getElementById('table-body');
+    const rowCount = document.getElementById('row-count');
+
+    if (data.length > 0) {
+      thead.innerHTML = `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
+      tbody.innerHTML = data.map(row =>
+        `<tr>${columns.map(col => `<td>${row[col] ?? ''}</td>`).join('')}</tr>`
+      ).join('');
+      rowCount.textContent = `Total records: ${data.length}`;
+    } else {
+      thead.innerHTML = '';
+      tbody.innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
+      rowCount.textContent = 'Total records: 0';
+    }
+  }
+
+  // Event listeners
+  document.getElementById('districtFilter').addEventListener('change', async e => {
+    const district = e.target.value;
+    const blockContainer = document.getElementById('block-filter-container');
+
+    if (district) {
+      blockContainer.style.display = 'block';
+      await fetchBlocks(district);
+    } else {
+      blockContainer.style.display = 'none';
     }
 
-    async function fetchData(district = '') {
-  let query = client.from('schools').select(columns.join(','));
-  if (district) query = query.eq('district', district);
+    fetchData(district, '');
+  });
 
-  const { data, error } = await query;
-  if (error) return console.error('Error fetching data:', error);
+  document.getElementById('blockFilter').addEventListener('change', e => {
+    const district = document.getElementById('districtFilter').value;
+    const block = e.target.value;
+    fetchData(district, block);
+  });
 
-  const thead = document.getElementById('table-head');
-  const tbody = document.getElementById('table-body');
-  const rowCount = document.getElementById('row-count'); // <-- add this
-
-  if (data.length > 0) {
-    thead.innerHTML = `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
-    tbody.innerHTML = data.map(row =>
-      `<tr>${columns.map(col => `<td>${row[col] ?? ''}</td>`).join('')}</tr>`
-    ).join('');
-    rowCount.textContent = `Total records: ${data.length}`; // <-- update count
-  } else {
-    thead.innerHTML = '';
-    tbody.innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
-    rowCount.textContent = 'Total records: 0'; // <-- zero fallback
-  }
-}
-
-
-    document.getElementById('districtFilter').addEventListener('change', e => {
-      fetchData(e.target.value);
-    });
-
-    // Initial load
-    fetchDistricts();
-    fetchData();
-  </script>
+  // Initial load
+  fetchDistricts();
+  fetchData();
+</script>
 
 </body>
 </html>
