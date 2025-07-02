@@ -141,16 +141,19 @@
     const rowCount = document.getElementById('row-count');
 
     if (data.length > 0) {
-      thead.innerHTML = `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
-      tbody.innerHTML = data.map(row =>
-        `<tr>${columns.map(col => `<td>${row[col] ?? ''}</td>`).join('')}</tr>`
-      ).join('');
-      rowCount.textContent = `Total records: ${data.length}`;
-    } else {
-      thead.innerHTML = '';
-      tbody.innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
-      rowCount.textContent = 'Total records: 0';
-    }
+  thead.innerHTML = `<tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>`;
+  tbody.innerHTML = data.map(row =>
+    `<tr>${columns.map(col => `<td>${row[col] ?? ''}</td>`).join('')}</tr>`
+  ).join('');
+
+  const totalStudents = data.reduce((sum, row) => sum + (Number(row.regstudents) || 0), 0);
+  rowCount.textContent = `Total School: ${data.length} | Total Student: ${totalStudents}`;
+} else {
+  thead.innerHTML = '';
+  tbody.innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
+  rowCount.textContent = 'Total records: 0 | Total students: 0';
+}
+
   }
 
   // Event listeners
