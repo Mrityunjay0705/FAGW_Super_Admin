@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="="en">
+<head>
+  <meta charset="UTF-8">
+  <title>District Wise School Summary</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #121212;
+      color: #f1f1f1;
+    }
+
+    h2 {
+      text-align: center;
+      color: #00ff95;
+      margin-bottom: 20px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+
+    th {
+      background-color: #1e1e1e;
+      color: #f1f1f1;
+      position: sticky;
+      top: 0;
+    }
+
+    tr.green {
+      background-color: #142f14;
+      color: #00e676;
+    }
+
+    tr.red {
+      background-color: #2a1212;
+      color: #ff4c4c;
+    }
+
+    .rank-badge {
+      display: inline-block;
+      background-color: gold;
+      color: #000;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      text-align: center;
+      line-height: 22px;
+      font-weight: bold;
+      margin-right: 6px;
+    }
+
+    @media (max-width: 600px) {
+      th, td {
+        padding: 10px 8px;
+        font-size: 0.9em;
+      }
+
+      .rank-badge {
+        width: 20px;
+        height: 20px;
+        line-height: 20px;
+        font-size: 0.8em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h2>📊 District-wise School Registration Summary</h2>
+  <div class="table-wrapper">
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>District</th>
+          <th>Total Schools</th>
+        </tr>
+      </thead>
+      <tbody id="district-table-body">
+        <tr><td colspan="2">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://jjkmaohgdmbaakvkytlx.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impqa21hb2hnZG1iYWFrdmt5dGx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2OTc4OTEsImV4cCI6MjA2NjI3Mzg5MX0.LWOM4AcW4vSOIXePLtpUdFLqTQnXOOb2NW5F1LQLJQs";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const allDistricts = [
+      "Balod", "Baloda Bazar", "Balrampur", "Bastar", "Bemetara", "Bijapur", "Bilaspur",
+      "Dantewada", "Dhamtari", "Durg", "Gariyaband", "Gaurela Pendra Marwahi", "Janjgir-Champa",
+      "Jashpur", "Kabirdham", "Kanker", "Khairagarh-Chhuikhadan-Gandai", "Kondagaon", "Korba",
+      "Koriya", "Mahasamund", "Manendragarh-Chirmiri-Bharatpur", "Mohla-Manpur", "Mungeli",
+      "Narayanpur", "Raigarh", "Raipur", "Rajnandgaon", "Sakti", "Sarangarh-Bilaigarh", "Sukma",
+      "Surajpur", "Surguja"
+    ];
+
+    async function loadDistrictSummary() {
+      const { data, error } = await client
+        .from('schools')
+        .select('district');
+
+      if (error) {
+        console.error("Error loading data:", error);
+        return;
+      }
+
+      // Count schools per district from live data
+      const districtCountMap = {};
+      data.forEach(entry => {
+        const district = entry.district?.trim();
+        if (district) {
+          districtCountMap[district] = (districtCountMap[district] || 0) + 1;
+        }
+      });
+
+      // Create unified list with counts (0 default if not present)
+      const finalDistricts = allDistricts.map(district => ({
+        district,
+        count: districtCountMap[district] || 0
+      }));
+
+      // Sort by descending count
+      finalDistricts.sort((a, b) => b.count - a.count);
+
+      // Render rows
+      const tbody = document.getElementById('district-table-body');
+      tbody.innerHTML = "";
+
+      finalDistricts.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = item.count === 0 ? 'red' : 'green';
+
+        let rankTag = '';
+        if (index === 0) rankTag = '<span class="rank-badge">🥇</span>';
+        else if (index === 1) rankTag = '<span class="rank-badge">🥈</span>';
+        else if (index === 2) rankTag = '<span class="rank-badge">🥉</span>';
+
+        tr.innerHTML = `
+          <td>${rankTag}${item.district}</td>
+          <td>${item.count}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (finalDistricts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="2">No data available</td></tr>`;
+      }
+    }
+
+    // Initial load and auto-refresh
+    loadDistrictSummary();
+    setInterval(loadDistrictSummary, 10000);
+  </script>
+</body>
+</html>

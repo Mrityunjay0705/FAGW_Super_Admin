@@ -70,9 +70,53 @@
     @media (max-width: 600px) {
       table { font-size: 0.9em; }
     }
+
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.enviro-button {
+  background: linear-gradient(135deg, #28a745, #218838);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 25px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.95em;
+  box-shadow: 0 4px 10px rgba(0, 255, 100, 0.3);
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  animation: pulse 2.5s infinite;
+}
+
+.enviro-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 14px rgba(0, 255, 100, 0.4);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0,255,127, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(0,255,127, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,255,127, 0); }
+}
+
+@media (max-width: 600px) {
+  .enviro-button {
+    padding: 8px 14px;
+    font-size: 0.85em;
+  }
+}
+
   </style>
 </head>
 <body>
+
+  <div class="top-bar">
+  <a href="/FAWG Super Admin Login/district-data.html" class="enviro-button">📌All District Data</a>
+</div>
 
   <h2>🏫Schools Dashboard</h2>
 
