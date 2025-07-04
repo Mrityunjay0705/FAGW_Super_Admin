@@ -141,14 +141,27 @@
   <span id="total-text">Total Schools: 0</span>
 </div>
 
+<div id="total-students-count" class="total-button">
+  <span class="live-dot"></span>
+  <span id="student-text">Total Students: 0</span>
+</div>
+
+<div id="total-photos-count" class="total-button">
+  <span class="live-dot"></span>
+  <span id="photo-text">Total Photos: 0</span>
+</div>
+
+
   <div class="table-wrapper">
     <table class="summary-table">
-      <thead>
-        <tr>
-          <th>District</th>
-          <th>Total Schools</th>
-        </tr>
-      </thead>
+    <thead>
+      <tr>
+        <th>District</th>
+        <th>Total Schools</th>
+        <th>Total Students</th>
+        <th>Total Photos</th>
+     </tr>
+    </thead>
       <tbody id="district-table-body">
         <tr><td colspan="2">Loading...</td></tr>
       </tbody>
@@ -170,58 +183,86 @@
     ];
 
     async function loadDistrictSummary() {
-      const { data, error } = await client
-        .from('schools')
-        .select('district');
+  const { data: schools, error: schoolsError } = await client
+    .from('schools')
+    .select('district');
 
-      if (error) {
-        console.error("Error loading data:", error);
-        return;
-      }
+  const { data: students, error: studentsError } = await client
+    .from('students')
+    .select('district, photourl');
 
-      // Count schools per district from live data
-      const districtCountMap = {};
-      data.forEach(entry => {
-        const district = entry.district?.trim();
-        if (district) {
-          districtCountMap[district] = (districtCountMap[district] || 0) + 1;
-        }
-      });
+  if (schoolsError || studentsError) {
+    console.error("Error loading data:", schoolsError || studentsError);
+    return;
+  }
 
-      // Create unified list with counts (0 default if not present)
-      const finalDistricts = allDistricts.map(district => ({
-        district,
-        count: districtCountMap[district] || 0
-      }));
+  // 🧮 Aggregate school, student, photo count per district
+  const districtSummary = {};
 
-      // Sort by descending count
-      finalDistricts.sort((a, b) => b.count - a.count);
+  allDistricts.forEach(d => {
+    districtSummary[d] = {
+      schools: 0,
+      students: 0,
+      photos: 0
+    };
+  });
 
-      // Render rows
-      const tbody = document.getElementById('district-table-body');
-      document.getElementById('total-text').textContent = `Total Schools: ${data.length}`;
-      tbody.innerHTML = "";
-
-      finalDistricts.forEach((item, index) => {
-        const tr = document.createElement('tr');
-        tr.className = item.count === 0 ? 'red' : 'green';
-
-        let rankTag = '';
-        if (index === 0) rankTag = '<span class="rank-badge">🥇</span>';
-        else if (index === 1) rankTag = '<span class="rank-badge">🥈</span>';
-        else if (index === 2) rankTag = '<span class="rank-badge">🥉</span>';
-
-        tr.innerHTML = `
-          <td>${rankTag}${item.district}</td>
-          <td>${item.count}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      if (finalDistricts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="2">No data available</td></tr>`;
-      }
+  schools.forEach(s => {
+    const district = s.district?.trim();
+    if (district && districtSummary[district]) {
+      districtSummary[district].schools += 1;
     }
+  });
+
+  students.forEach(s => {
+    const district = s.district?.trim();
+    if (district && districtSummary[district]) {
+      districtSummary[district].students += 1;
+      if (s.photourl) districtSummary[district].photos += 1;
+    }
+  });
+
+  // Convert to sorted array
+  const sorted = Object.entries(districtSummary)
+    .map(([district, counts]) => ({ district, ...counts }))
+    .sort((a, b) => b.schools - a.schools);
+
+  // Render rows
+  const tbody = document.getElementById('district-table-body');
+  // document.getElementById('total-text').textContent = `Total Schools: ${schools.length}`;
+  tbody.innerHTML = "";
+
+  // Calculate total students and photos
+const totalStudents = students.length;
+const totalPhotos = students.filter(s => s.photourl).length;
+
+document.getElementById('student-text').textContent = `Total Students: ${totalStudents}`;
+document.getElementById('photo-text').textContent = `Total Photos: ${totalPhotos}`;
+document.getElementById('total-text').textContent = `Total Schools: ${schools.length}`;
+
+
+  sorted.forEach((row, index) => {
+    const tr = document.createElement('tr');
+    tr.className = row.schools === 0 ? 'red' : 'green';
+
+    let rankTag = '';
+    if (index === 0) rankTag = '<span class="rank-badge">🥇</span>';
+    else if (index === 1) rankTag = '<span class="rank-badge">🥈</span>';
+    else if (index === 2) rankTag = '<span class="rank-badge">🥉</span>';
+
+    tr.innerHTML = `
+      <td>${rankTag}${row.district}</td>
+      <td>${row.schools}</td>
+      <td>${row.students}</td>
+      <td>${row.photos}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  if (sorted.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">No data available</td></tr>`;
+  }
+}
 
     // Initial load and auto-refresh
     loadDistrictSummary();
