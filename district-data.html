@@ -151,6 +151,10 @@
   <span id="photo-text">Total Photos: 0</span>
 </div>
 
+<div style="margin-bottom: 10px;">
+  <span>Ranking based on Total Students 👇🏻</span>
+</div>
+
 
   <div class="table-wrapper">
     <table class="summary-table">
@@ -225,7 +229,7 @@
   // Convert to sorted array
   const sorted = Object.entries(districtSummary)
     .map(([district, counts]) => ({ district, ...counts }))
-    .sort((a, b) => b.schools - a.schools);
+    .sort((a, b) => b.students - a.students);
 
   // Render rows
   const tbody = document.getElementById('district-table-body');

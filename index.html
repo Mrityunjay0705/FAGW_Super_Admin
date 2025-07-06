@@ -184,6 +184,11 @@
     const { data, error } = await query;
     if (error) return console.error('Error fetching data:', error);
 
+    if (data) {
+  data.sort((a, b) => (Number(b.regstudents) || 0) - (Number(a.regstudents) || 0));
+}
+
+
     const thead = document.getElementById('table-head');
     const tbody = document.getElementById('table-body');
     const rowCount = document.getElementById('row-count');
