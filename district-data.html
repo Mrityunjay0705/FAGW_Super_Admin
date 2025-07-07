@@ -188,17 +188,20 @@
 
     async function loadDistrictSummary() {
   const { data: schools, error: schoolsError } = await client
-    .from('schools')
-    .select('district');
+  .from('schools')
+  .select('district, regstudents, totalphotoupload');
 
-  const { data: students, error: studentsError } = await client
-    .from('students')
-    .select('district, photourl');
+// const { data: students, error: studentsError } = await client
+//   .from('students')
+//   .select('district, photourl', { count: 'exact' })
+//   .range(0, 9999);
 
-  if (schoolsError || studentsError) {
-    console.error("Error loading data:", schoolsError || studentsError);
-    return;
-  }
+
+  if (schoolsError) {
+  console.error("Error loading data:", schoolsError);
+  return;
+}
+
 
   // 🧮 Aggregate school, student, photo count per district
   const districtSummary = {};
@@ -212,19 +215,25 @@
   });
 
   schools.forEach(s => {
-    const district = s.district?.trim();
-    if (district && districtSummary[district]) {
-      districtSummary[district].schools += 1;
-    }
-  });
+  const district = s.district?.trim();
+  const regCount = Number(s.regstudents) || 0;
+  const photoCount = Number(s.totalphotoupload) || 0;
 
-  students.forEach(s => {
-    const district = s.district?.trim();
-    if (district && districtSummary[district]) {
-      districtSummary[district].students += 1;
-      if (s.photourl) districtSummary[district].photos += 1;
-    }
-  });
+  if (district && districtSummary[district]) {
+    districtSummary[district].schools += 1;
+    districtSummary[district].students += regCount;
+    districtSummary[district].photos += photoCount;
+  }
+});
+
+
+// students.forEach(s => {
+//   const district = s.district?.trim();
+//   if (district && districtSummary[district]) {
+//     if (s.photourl) districtSummary[district].photos += 1;
+//   }
+// });
+
 
   // Convert to sorted array
   const sorted = Object.entries(districtSummary)
@@ -237,8 +246,8 @@
   tbody.innerHTML = "";
 
   // Calculate total students and photos
-const totalStudents = students.length;
-const totalPhotos = students.filter(s => s.photourl).length;
+const totalStudents = schools.reduce((sum, s) => sum + (Number(s.regstudents) || 0), 0);
+const totalPhotos = schools.reduce((sum, s) => sum + (Number(s.totalphotoupload) || 0), 0);
 
 document.getElementById('student-text').textContent = `Total Students: ${totalStudents}`;
 document.getElementById('photo-text').textContent = `Total Photos: ${totalPhotos}`;
