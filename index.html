@@ -200,7 +200,8 @@
   ).join('');
 
   const totalStudents = data.reduce((sum, row) => sum + (Number(row.regstudents) || 0), 0);
-  rowCount.textContent = `Total School: ${data.length} | Total Student: ${totalStudents}`;
+  const totalPhotos = data.reduce((sum, row) => sum + (Number(row.totalphotoupload) || 0), 0);
+  rowCount.textContent = `Total School: ${data.length} | Total Student: ${totalStudents} | Total Photo: ${totalPhotos}`;
 } else {
   thead.innerHTML = '';
   tbody.innerHTML = '<tr><td colspan="100%">No data found</td></tr>';
