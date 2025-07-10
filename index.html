@@ -134,7 +134,9 @@
   </select>
 </div>
 
-
+  <div style="margin-bottom: 10px;">
+  <span>Rank based on Total Photos📷 👇🏻</span>
+</div>
   <table>
     <thead id="table-head"></thead>
     <tbody id="table-body"></tbody>
@@ -185,7 +187,7 @@
     if (error) return console.error('Error fetching data:', error);
 
     if (data) {
-  data.sort((a, b) => (Number(b.regstudents) || 0) - (Number(a.regstudents) || 0));
+  data.sort((a, b) => (Number(b.totalphotoupload) || 0) - (Number(a.totalphotoupload) || 0));
 }
 
 
